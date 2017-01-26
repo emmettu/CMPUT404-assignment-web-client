@@ -1,13 +1,13 @@
 #!/usr/bin/env python
 # coding: utf-8
 # Copyright 2016 Abram Hindle, https://github.com/tywtyw2002, and https://github.com/treedust
-# 
+#
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
-# 
+#
 #     http://www.apache.org/licenses/LICENSE-2.0
-# 
+#
 # Unless required by applicable law or agreed to in writing, software
 # distributed under the License is distributed on an "AS IS" BASIS,
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -35,18 +35,20 @@ class HTTPResponse(object):
 class HTTPClient(object):
     #def get_host_port(self,url):
 
-    def connect(self, host, port):
-        # use sockets!
-        return None
+    def __init__(self):
+        self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+
+    def connect(self, host, port=80):
+        self.socket.connect((host, port))
 
     def get_code(self, data):
-        return None
+        return data.split("\n")[0].split(" ")[1]
 
     def get_headers(self,data):
         return None
 
     def get_body(self, data):
-        return None
+        return data.split("\r\n\r\n")[1]
 
     # read everything from the socket
     def recvall(self, sock):
@@ -60,22 +62,28 @@ class HTTPClient(object):
                 done = not part
         return str(buffer)
 
-    def GET(self, url, args=None):
-        code = 500
-        body = ""
+    def GET(self, args=None):
+        self.socket.sendall("GET / HTTP/1.1\r\n\r\n")
+        response = self.recvall(self.socket)
+        #print response
+        code = self.get_code(response)
+        body = self.get_body(response)
         return HTTPResponse(code, body)
 
-    def POST(self, url, args=None):
+    def POST(self, args=None):
         code = 500
         body = ""
         return HTTPResponse(code, body)
 
     def command(self, url, command="GET", args=None):
+        url = urllib.quote(url)
+        self.connect(url)
+        print url
         if (command == "POST"):
-            return self.POST( url, args )
+            return self.POST(args)
         else:
-            return self.GET( url, args )
-    
+            return self.GET(args)
+
 if __name__ == "__main__":
     client = HTTPClient()
     command = "GET"
@@ -85,4 +93,4 @@ if __name__ == "__main__":
     elif (len(sys.argv) == 3):
         print client.command( sys.argv[2], sys.argv[1] )
     else:
-        print client.command( sys.argv[1] )   
+        print client.command( sys.argv[1] )
