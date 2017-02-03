@@ -75,10 +75,25 @@ class HTTPClient(object):
         self.reset_socket()
         return HTTPResponse(code, body)
 
-    def POST(self, args=None):
-        code = 500
-        body = ""
+    def POST(self, url, args=None):
+        host, path, port = self.parse_url(url)
+        self.connect(host, port)
+        body = self.build_body(args)
+        print(body)
+        length = len(bytearray(body))
+        self.socket.sendall(
+            "POST %s HTTP/1.1\r\nHost: %s\r\ncontent-length: %d\r\nAccept: */*\r\n\r\n%s" % (path, host, length, body)
+        )
+        response = self.recvall(self.socket)
+        code = self.get_code(response)
+        body = self.get_body(response)
+        self.reset_socket()
         return HTTPResponse(code, body)
+
+    def build_body(self, args):
+        if not args:
+            return ""
+        return "&".join(["%s=%s" % (k, v) for k, v in args.iteritems()])
 
     def parse_url(self, args):
         url = args.strip("http://")
