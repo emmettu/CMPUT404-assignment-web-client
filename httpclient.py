@@ -67,11 +67,7 @@ class HTTPClient(object):
         host, path, port = self.parse_url(args)
         self.connect(host, port)
         self.socket.sendall(
-"""
-GET %s HTTP/1.1\r
-Host: %s\r
-\r
-""" % (path, host)
+            "GET %s HTTP/1.1\r\nHost: %s\r\nAccept: */*\r\n\r\n" % (path, host)
         )
         response = self.recvall(self.socket)
         code = self.get_code(response)
