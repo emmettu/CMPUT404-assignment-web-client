@@ -29,19 +29,20 @@ def help():
 
 class HTTPResponse(object):
     def __init__(self, code=200, body=""):
-        self.code = code
+        self.code = int(code)
         self.body = body
 
 class HTTPClient(object):
     #def get_host_port(self,url):
 
     def __init__(self):
-        self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.open_socket()
 
     def connect(self, host, port=80):
         self.socket.connect((host, port))
 
     def get_code(self, data):
+        # print data
         return data.split("\n")[0].split(" ")[1]
 
     def get_headers(self,data):
@@ -62,12 +63,20 @@ class HTTPClient(object):
                 done = not part
         return str(buffer)
 
-    def GET(self, args=None):
-        self.socket.sendall("GET / HTTP/1.1\r\n\r\n")
+    def GET(self, args):
+        host, path, port = self.parse_url(args)
+        self.connect(host, port)
+        self.socket.sendall(
+"""
+GET %s HTTP/1.1\r
+Host: %s\r
+\r
+""" % (path, host)
+        )
         response = self.recvall(self.socket)
-        #print response
         code = self.get_code(response)
         body = self.get_body(response)
+        self.reset_socket()
         return HTTPResponse(code, body)
 
     def POST(self, args=None):
@@ -75,14 +84,30 @@ class HTTPClient(object):
         body = ""
         return HTTPResponse(code, body)
 
+    def parse_url(self, args):
+        url = args.strip("http://")
+        path = "/"
+        host = url
+        port = 80
+        if "/" in url:
+            host, sub_path = url.split("/", 1)
+            path += sub_path
+        if ":" in host:
+            host, port = host.split(":")
+        return host, path, int(port)
+
+    def reset_socket(self):
+        self.socket.close()
+        self.open_socket()
+
+    def open_socket(self):
+        self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+
     def command(self, url, command="GET", args=None):
-        url = urllib.quote(url)
-        self.connect(url)
-        print url
         if (command == "POST"):
             return self.POST(args)
         else:
-            return self.GET(args)
+            return self.GET(url)
 
 if __name__ == "__main__":
     client = HTTPClient()
