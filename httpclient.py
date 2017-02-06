@@ -92,11 +92,26 @@ class HTTPClient(object):
         path = urllib.url2pathname(path)
         request = Request("GET", path, host)
         self.socket.sendall(request.build())
-        response = self.recvall(self.socket)
-        code = self.get_code(response)
-        body = self.get_body(response)
+        raw_response = self.recvall(self.socket)
+        code = self.get_code(raw_response)
+        body = self.get_body(raw_response)
         self.reset_socket()
-        return HTTPResponse(code, body)
+        response = HTTPResponse(code, body)
+        if (code == "301" or code == "302"):
+            return self.redirect(raw_response, response)
+        return respons
+
+    def redirect(self, response, three_o_response):
+        new_url = self.parse_redirect(response)
+        if new_url.startswith("https"):
+            return three_o_response
+        return self.GET(new_url)
+
+    def parse_redirect(self, response):
+        headers = response.split("\r\n\r\n")[0]
+        location = filter(lambda x: x.startswith("Location: "), headers.split("\r\n"))[0]
+        new_url = location.split()[1]
+        return new_url
 
     def POST(self, url, args={}):
         host, path, port = self.parse_url(url)
@@ -132,7 +147,7 @@ class HTTPClient(object):
     def open_socket(self):
         self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
-    def command(self, url, command="GET", args=None):
+    def command(self, url, command="GET", args={}):
         if (command == "POST"):
             return self.POST(url, args)
         else:
