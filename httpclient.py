@@ -33,11 +33,11 @@ class HTTPResponse(object):
         self.body = body
 
     def __str__(self):
-        return "%s %s" % (self.code, self.body)
+        return "%s\n%s" % (self.code, self.body)
 
 class Request(object):
     def __init__(self, method, path, host):
-        self.headers = {"Host" : host, "Accept" : "*/*"}
+        self.headers = {"Host" : host, "Accept" : "*/*", "Connection" : "close"}
         self.method = method
         self.path = path
         self.body = ""
@@ -85,20 +85,20 @@ class HTTPClient(object):
                 done = not part
         return str(buffer)
 
-    def GET(self, args):
-        host, path, port = self.parse_url(args)
+    def GET(self, url, args={}):
+        host, path, port = self.parse_url(url)
         self.connect(host, port)
+        path += urllib.urlencode(args)
+        path = urllib.url2pathname(path)
         request = Request("GET", path, host)
-        self.socket.sendall(
-            request.build()
-        )
+        self.socket.sendall(request.build())
         response = self.recvall(self.socket)
         code = self.get_code(response)
         body = self.get_body(response)
         self.reset_socket()
         return HTTPResponse(code, body)
 
-    def POST(self, url, args=None):
+    def POST(self, url, args={}):
         host, path, port = self.parse_url(url)
         self.connect(host, port)
         request = Request("POST", path, host)
@@ -111,8 +111,6 @@ class HTTPClient(object):
         return HTTPResponse(code, body)
 
     def build_body(self, args):
-        if not args:
-            return ""
         return urllib.urlencode(args)
 
     def parse_url(self, args):
@@ -136,9 +134,9 @@ class HTTPClient(object):
 
     def command(self, url, command="GET", args=None):
         if (command == "POST"):
-            return self.POST(args)
+            return self.POST(url, args)
         else:
-            return self.GET(url)
+            return self.GET(url, args)
 
 if __name__ == "__main__":
     client = HTTPClient()
