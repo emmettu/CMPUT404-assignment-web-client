@@ -1,6 +1,8 @@
 CMPUT404-assignment-web-client
 ==============================
 
+Emmett Underhill
+
 CMPUT404-assignment-web-client
 
 See requirements.org (plain-text) for a description of the project.
