@@ -46,6 +46,7 @@ class Request(object):
     def set_body(self, body):
         self.body = body
         self.headers["Content-Length"] = len(bytearray(body))
+        self.headers["Content-Type"] = "application/x-www-form-urlencoded"
 
     def build(self):
         status =  "%s %s HTTP/1.1" % (self.method, self.path)
@@ -112,7 +113,7 @@ class HTTPClient(object):
     def build_body(self, args):
         if not args:
             return ""
-        return "&".join(["%s=%s" % (k, v) for k, v in args.iteritems()])
+        return urllib.urlencode(args)
 
     def parse_url(self, args):
         url = args.strip("http://")
