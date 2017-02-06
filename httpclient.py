@@ -32,6 +32,27 @@ class HTTPResponse(object):
         self.code = int(code)
         self.body = body
 
+    def __str__(self):
+        return "%s %s" % (self.code, self.body)
+
+class Request(object):
+    def __init__(self, method, path, host):
+        self.headers = {"Host" : host, "Accept: " : "*/*"}
+        self.method = method
+        self.path = path
+        self.body = ""
+        self.end = "\r\n"
+
+    def set_body(self, body):
+        self.body = body
+        self.headers["Content-Length"] = len(bytearray(body))
+
+    def build(self):
+        status =  "%s %s HTTP/1.1" % (self.method, self.path)
+        headers = self.end.join(["%s: %s" % (k, v) for k, v in self.headers.iteritems()])
+
+        return "%s\r\n%s\r\n\r\n%s" % (status, headers, self.body)
+
 class HTTPClient(object):
     #def get_host_port(self,url):
 
@@ -66,8 +87,9 @@ class HTTPClient(object):
     def GET(self, args):
         host, path, port = self.parse_url(args)
         self.connect(host, port)
+        request = Request("GET", path, host)
         self.socket.sendall(
-            "GET %s HTTP/1.1\r\nHost: %s\r\nAccept: */*\r\n\r\n" % (path, host)
+            request.build()
         )
         response = self.recvall(self.socket)
         code = self.get_code(response)
@@ -78,12 +100,9 @@ class HTTPClient(object):
     def POST(self, url, args=None):
         host, path, port = self.parse_url(url)
         self.connect(host, port)
-        body = self.build_body(args)
-        print(body)
-        length = len(bytearray(body))
-        self.socket.sendall(
-            "POST %s HTTP/1.1\r\nHost: %s\r\ncontent-length: %d\r\nAccept: */*\r\n\r\n%s" % (path, host, length, body)
-        )
+        request = Request("POST", path, host)
+        request.set_body(self.build_body(args))
+        self.socket.sendall(request.build())
         response = self.recvall(self.socket)
         code = self.get_code(response)
         body = self.get_body(response)
