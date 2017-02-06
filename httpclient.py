@@ -99,7 +99,7 @@ class HTTPClient(object):
         response = HTTPResponse(code, body)
         if (code == "301" or code == "302"):
             return self.redirect(raw_response, response)
-        return respons
+        return response
 
     def redirect(self, response, three_o_response):
         new_url = self.parse_redirect(response)
