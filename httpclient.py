@@ -37,7 +37,7 @@ class HTTPResponse(object):
 
 class Request(object):
     def __init__(self, method, path, host):
-        self.headers = {"Host" : host, "Accept: " : "*/*"}
+        self.headers = {"Host" : host, "Accept" : "*/*"}
         self.method = method
         self.path = path
         self.body = ""
